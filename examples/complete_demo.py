@@ -13,14 +13,22 @@ The demo creates a complex Excel file with various features, then shows how to
 analyze it using tidyxl functions.
 """
 
+import os
+from datetime import datetime
+
 import pandas as pd
-from tidyxl import xlsx_cells, xlsx_sheet_names, xlsx_names, xlsx_validation, xlsx_formats
 from openpyxl import Workbook
+from openpyxl.comments import Comment
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.comments import Comment
-from datetime import datetime
-import os
+
+from tidyxl import (
+    xlsx_cells,
+    xlsx_formats,
+    xlsx_names,
+    xlsx_sheet_names,
+    xlsx_validation,
+)
 
 print("=" * 80)
 print("TIDYXL COMPLETE DEMONSTRATION")
@@ -57,7 +65,7 @@ sales_data = [
 for row_idx, row_data in enumerate(sales_data, 2):
     for col_idx, value in enumerate(row_data, 1):
         cell = ws1.cell(row=row_idx, column=col_idx, value=value)
-        
+
         # Add a comment to one cell
         if row_idx == 2 and col_idx == 1:
             cell.comment = Comment("This is our bestselling product", "Sales Manager")
@@ -80,7 +88,7 @@ for col, header in enumerate(validation_headers, 1):
 # 1. Number validation (scores 0-100)
 score_validation = DataValidation(
     type="whole",
-    operator="between", 
+    operator="between",
     formula1=0,
     formula2=100,
     showErrorMessage=True,
@@ -96,7 +104,7 @@ date_validation = DataValidation(
     operator="greaterThan",
     formula1="2020-01-01",
     showErrorMessage=True,
-    errorTitle="Invalid Date", 
+    errorTitle="Invalid Date",
     error="Date must be after 2020-01-01"
 )
 ws2.add_data_validation(date_validation)
@@ -165,8 +173,8 @@ names_df = xlsx_names(filename)
 print(f"Found {len(names_df)} named ranges:")
 if len(names_df) > 0:
     print(names_df[['name', 'formula', 'sheet', 'is_range']].to_string(index=False))
-    
-    print(f"\nBreakdown:")
+
+    print("\nBreakdown:")
     global_count = len(names_df[names_df['sheet'].isna()])
     sheet_count = len(names_df[names_df['sheet'].notna()])
     print(f"  Global ranges: {global_count}")
@@ -183,8 +191,8 @@ if len(validation_df) > 0:
     key_cols = ['sheet', 'ref', 'type', 'operator', 'formula1', 'error_title']
     display_cols = [col for col in key_cols if col in validation_df.columns]
     print(validation_df[display_cols].to_string(index=False))
-    
-    print(f"\nValidation types:")
+
+    print("\nValidation types:")
     for vtype, count in validation_df['type'].value_counts().items():
         print(f"  {vtype}: {count} rules")
 
@@ -210,14 +218,14 @@ print(f"Total cells extracted: {len(all_cells)}")
 print(f"Sheets processed: {all_cells['sheet'].unique().tolist()}")
 
 # Show data type distribution
-print(f"\nData type distribution:")
+print("\nData type distribution:")
 type_counts = all_cells['data_type'].value_counts()
 for dtype, count in type_counts.items():
     print(f"  {dtype}: {count} cells")
 
 # Show first few content cells
 content_cells = all_cells[~all_cells['is_blank']].head(10)
-print(f"\nFirst 10 cells with content:")
+print("\nFirst 10 cells with content:")
 display_cols = ['sheet', 'address', 'data_type', 'content']
 print(content_cells[display_cols].to_string(index=False))
 
@@ -280,13 +288,13 @@ def tidy_to_table(cells_df, sheet_name, max_rows=5):
     sheet_cells = cells_df[(cells_df['sheet'] == sheet_name) & (~cells_df['is_blank'])]
     if len(sheet_cells) == 0:
         return pd.DataFrame()
-    
+
     # Limit to first few rows for display
     limited_cells = sheet_cells[sheet_cells['row'] <= max_rows]
-    
+
     return limited_cells.pivot_table(
         index='row',
-        columns='col', 
+        columns='col',
         values='content',
         aggfunc='first'
     ).fillna('')
@@ -310,9 +318,9 @@ print("-" * 38)
 
 # Find potential data quality issues
 blank_in_data = all_cells[
-    (all_cells['sheet'] == 'Sales_Data') & 
-    (all_cells['row'] > 1) & 
-    (all_cells['col'] <= 7) & 
+    (all_cells['sheet'] == 'Sales_Data') &
+    (all_cells['row'] > 1) &
+    (all_cells['col'] <= 7) &
     (all_cells['is_blank'])
 ]
 print(f"Blank cells in data range: {len(blank_in_data)}")
@@ -348,23 +356,23 @@ if len(validation_df) > 0:
             start_row = int(''.join(filter(str.isdigit, parts[0])))
             end_row = int(''.join(filter(str.isdigit, parts[1])))
             total_validated_cells += (end_row - start_row + 1)
-    
+
     print(f"Total cells with validation rules: ~{total_validated_cells}")
 
 print("\n" + "=" * 80)
 print("DEMONSTRATION COMPLETE!")
 print("=" * 80)
 
-print(f"\nKey Benefits of tidyxl:")
+print("\nKey Benefits of tidyxl:")
 print("• 📊 Tidy format: Each cell is one row with complete metadata")
 print("• 🔍 Comprehensive: Extract values, formulas, formatting, comments")
-print("• 🏷️  Named ranges: Access Excel defined names and ranges") 
+print("• 🏷️  Named ranges: Access Excel defined names and ranges")
 print("• ✅ Validation: Discover data entry rules and constraints")
 print("• 📋 Multi-sheet: Process all worksheets or specific ones")
 print("• 🔄 Flexible: Perfect for complex, non-tabular Excel analysis")
 print("• 🎯 R Compatible: Identical to R tidyxl package")
 
-print(f"\nNext steps:")
+print("\nNext steps:")
 print("• Explore your own Excel files using these functions")
 print("• Combine with pandas for advanced data analysis")
 print("• Use for data quality assessment and cleaning")

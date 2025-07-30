@@ -2,22 +2,22 @@
 Data validation extraction functionality
 """
 
+
 import pandas as pd
 from openpyxl import load_workbook
-from typing import List, Optional, Union
 
 
 def xlsx_validation(
-    path: str, 
-    sheets: Optional[Union[str, List[str]]] = None,
+    path: str,
+    sheets: str | list[str] | None = None,
     check_filetype: bool = True
 ) -> pd.DataFrame:
     """
     Import data validation rules of cells in xlsx (Excel) files.
-    
+
     Extracts data validation rules from Excel cells, including numeric ranges,
     date constraints, list restrictions, and custom formula-driven rules.
-    
+
     Parameters
     ----------
     path : str
@@ -26,7 +26,7 @@ def xlsx_validation(
         Worksheet names to read. If None, reads all sheets.
     check_filetype : bool, default True
         Whether to check that the file is a valid xlsx/xlsm file
-        
+
     Returns
     -------
     pd.DataFrame
@@ -46,15 +46,15 @@ def xlsx_validation(
         - error: Error message text
         - error_style: Error style (stop, warning, information)
     """
-    
+
     # Check file type if requested
     if check_filetype:
         if not path.lower().endswith(('.xlsx', '.xlsm')):
             raise ValueError("File must be .xlsx or .xlsm format")
-    
+
     # Load workbook
     wb = load_workbook(filename=path, data_only=False)
-    
+
     # Determine which sheets to process
     if sheets is None:
         sheet_names = wb.sheetnames
@@ -62,19 +62,19 @@ def xlsx_validation(
         sheet_names = [sheets]
     else:
         sheet_names = sheets
-    
+
     # Validate sheet names
     available_sheets = wb.sheetnames
     for sheet_name in sheet_names:
         if sheet_name not in available_sheets:
             raise ValueError(f"Sheet '{sheet_name}' not found. Available sheets: {available_sheets}")
-    
+
     validation_list = []
-    
+
     try:
         for sheet_name in sheet_names:
             ws = wb[sheet_name]
-            
+
             # Get data validation rules
             if hasattr(ws, 'data_validations'):
                 for dv in ws.data_validations.dataValidation:
@@ -94,12 +94,12 @@ def xlsx_validation(
                         'error': dv.error,
                         'error_style': dv.errorStyle
                     }
-                    
+
                     validation_list.append(validation_record)
-                    
+
     finally:
         wb.close()
-    
+
     # Convert to DataFrame with proper columns even if empty
     if not validation_list:
         # Return empty DataFrame with correct column structure
@@ -109,10 +109,10 @@ def xlsx_validation(
             'prompt_title', 'prompt', 'error_title', 'error', 'error_style'
         ]
         return pd.DataFrame(columns=expected_columns)
-    
+
     df = pd.DataFrame(validation_list)
-    
+
     # Sort by sheet, then by ref
     df = df.sort_values(['sheet', 'ref']).reset_index(drop=True)
-    
+
     return df
