@@ -1057,6 +1057,11 @@ test = [
     { name = "pytest-cov" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "twine" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
@@ -1075,6 +1080,9 @@ requires-dist = [
     { name = "twine", marker = "extra == 'dev'", specifier = ">=4.0.0" },
 ]
 provides-extras = ["dev", "docs", "test"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "twine", specifier = ">=6.1.0" }]
 
 [[package]]
 name = "twine"

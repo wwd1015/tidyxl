@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tidyxl"
-version = "0.1.0"
+version = "0.1.2"
 description = "Import Excel files into tidy format with cell-level data extraction"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "wwd1015", email = "wwd1015@users.noreply.github.com"},
+    {name = "Wendi Wang", email = "wwd1015@gmail.com"},
 ]
 maintainers = [
-    {name = "wwd1015", email = "wwd1015@users.noreply.github.com"},
+    {name = "Wendi Wang", email = "wwd1015@gmail.com"},
 ]
 keywords = [
     "excel", "xlsx", "tidy", "data", "spreadsheet", "openpyxl", "pandas", 
@@ -59,11 +59,11 @@ test = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/wwd1015/tidyxl"
-"Bug Tracker" = "https://github.com/wwd1015/tidyxl/issues"
-"Documentation" = "https://github.com/wwd1015/tidyxl#readme"
-"Source Code" = "https://github.com/wwd1015/tidyxl"
-"Changelog" = "https://github.com/wwd1015/tidyxl/blob/main/CHANGELOG.md"
+"Homepage" = "https://github.com/yourusername/tidyxl"
+"Bug Tracker" = "https://github.com/yourusername/tidyxl/issues"
+"Documentation" = "https://github.com/yourusername/tidyxl#readme"
+"Source Code" = "https://github.com/yourusername/tidyxl"
+"Changelog" = "https://github.com/yourusername/tidyxl/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
