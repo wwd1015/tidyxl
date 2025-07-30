@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tidyxl"
-version = "0.1.5"
+version = "0.1.6"
 description = "Import Excel files into tidy format with cell-level data extraction"
 readme = "README.md"
 license = {text = "MIT"}
@@ -148,14 +148,15 @@ warn_unused_ignores = false
 warn_no_return = false
 warn_unreachable = true
 strict_equality = false
+exclude = [
+    "tests/.*",
+    "examples/.*",
+    "docs/.*"
+]
 
 [[tool.mypy.overrides]]
 module = ["openpyxl.*"]
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["tests.*", "examples.*"]
-ignore_errors = true
 
 [dependency-groups]
 dev = [
