@@ -184,7 +184,7 @@ def _get_cell_data_and_values(cell) -> tuple[str, dict[str, Any]]:
         and typed_values_dict contains the appropriate typed value
     """
 
-    typed_values = {
+    typed_values: dict[str, Any] = {
         'error': None,
         'logical': None,
         'numeric': None,
@@ -272,7 +272,7 @@ def _get_formula_info(cell) -> dict[str, Any]:
         Dictionary with formula, is_array, formula_ref, formula_group
     """
 
-    formula_info = {
+    formula_info: dict[str, Any] = {
         'formula': None,
         'is_array': False,
         'formula_ref': None,

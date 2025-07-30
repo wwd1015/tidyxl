@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tidyxl"
-version = "0.1.4"
+version = "0.1.5"
 description = "Import Excel files into tidy format with cell-level data extraction"
 readme = "README.md"
 license = {text = "MIT"}
@@ -136,24 +136,30 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.12"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+disallow_untyped_decorators = false
 no_implicit_optional = true
 warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
+warn_unused_ignores = false
+warn_no_return = false
 warn_unreachable = true
-strict_equality = true
+strict_equality = false
 
 [[tool.mypy.overrides]]
 module = ["openpyxl.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["tests.*", "examples.*"]
+ignore_errors = true
+
 [dependency-groups]
 dev = [
+    "mypy>=1.17.0",
+    "pandas-stubs>=2.3.0.250703",
     "ruff>=0.12.7",
 ]

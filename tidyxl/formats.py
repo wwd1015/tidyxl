@@ -31,7 +31,7 @@ def xlsx_formats(path: str) -> dict[str, Any]:
 
     wb = load_workbook(filename=path, data_only=False)
 
-    formats = {
+    formats: dict = {
         'fonts': [],
         'fills': [],
         'borders': [],
