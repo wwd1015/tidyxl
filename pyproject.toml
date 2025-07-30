@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tidyxl"
-version = "0.1.2"
+version = "0.1.3"
 description = "Import Excel files into tidy format with cell-level data extraction"
 readme = "README.md"
 license = {text = "MIT"}

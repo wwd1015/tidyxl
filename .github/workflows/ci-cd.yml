@@ -1,78 +1,78 @@
 name: CI/CD Pipeline
 
 on:
-    push:
-      branches: [ main, master ]
-    pull_request:
-      branches: [ main, master ]
-    release:
-      types: [ published ]
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
 
-  jobs:
-    test:
-      runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: uv sync --all-extras --dev
+    
+    - name: Run tests
+      run: uv run pytest
+    
+    - name: Run linting
+      run: uv run ruff check .
+    
+    - name: Run type checking
+      run: uv run mypy .
 
-      steps:
-      - uses: actions/checkout@v4
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+    
+    - name: Build package
+      run: uv build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v2
-        with:
-          version: "latest"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Run tests
-        run: uv run pytest
-
-      - name: Run linting
-        run: uv run ruff check .
-
-      - name: Run type checking
-        run: uv run mypy .
-
-    build:
-      needs: test
-      runs-on: ubuntu-latest
-
-      steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v2
-
-      - name: Build package
-        run: uv build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-    publish:
-      needs: [test, build]
-      runs-on: ubuntu-latest
-      if: github.event_name == 'release'
-
-      steps:
-      - uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v2
-
-      - name: Publish to PyPI
-        run: uv publish --token ${{ secrets.PYPI_API_TOKEN }}
+  publish:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+    
+    - name: Publish to PyPI
+      run: uv publish --token ${{ secrets.PYPI_API_TOKEN }}
