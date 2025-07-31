@@ -220,11 +220,10 @@ def _get_cell_data_and_values(cell) -> tuple[str, dict[str, Any]]:
             typed_values['numeric'] = float(cell.value)
             return 'numeric', typed_values
 
-    elif cell.data_type == 'f':  # Formula - don't return formula as data_type
-        # For formulas, we need to determine the result type
-        # Since we can't evaluate formulas, we'll treat as character
-        typed_values['character'] = str(cell.value) if cell.value else None
-        return 'character', typed_values
+    elif cell.data_type == 'f':  # Formula
+        # For formulas, return 'formula' as data_type and don't populate character column
+        # The formula itself will be handled by _get_formula_info
+        return 'formula', typed_values
 
     else:  # String types ('s', 'inlineStr', 'str')
         typed_values['character'] = str(cell.value)
