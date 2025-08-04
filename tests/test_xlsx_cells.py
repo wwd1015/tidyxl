@@ -117,8 +117,8 @@ class TestXlsxCells:
             assert len(cell['address']) >= 2  # At least like "A1"
 
             # Check row/col are positive integers
-            assert isinstance(cell['row'], int | pd.Int64Dtype)
-            assert isinstance(cell['col'], int | pd.Int64Dtype)
+            assert isinstance(cell['row'], (int, pd.Int64Dtype))
+            assert isinstance(cell['col'], (int, pd.Int64Dtype))
             assert cell['row'] > 0
             assert cell['col'] > 0
 
