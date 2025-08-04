@@ -4,6 +4,7 @@ Step-by-step tutorial for using the tidyxl package
 """
 
 import pandas as pd
+
 from tidyxl import xlsx_cells, xlsx_formats
 
 print("=" * 60)
@@ -34,10 +35,10 @@ products_data = {
 with pd.ExcelWriter('tutorial_sample.xlsx', engine='openpyxl') as writer:
     df_emp = pd.DataFrame(employees_data)
     df_prod = pd.DataFrame(products_data)
-    
+
     df_emp.to_excel(writer, sheet_name='Employees', index=False)
     df_prod.to_excel(writer, sheet_name='Products', index=False)
-    
+
     # Add a summary sheet with formulas
     summary_data = {
         'Metric': ['Total Employees', 'Average Age', 'Total Salary'],
@@ -128,7 +129,7 @@ for _, header in headers.iterrows():
 
 # Find numeric data
 numeric_data = all_cells[all_cells['data_type'] == 'numeric']
-print(f"\nNumeric data summary:")
+print("\nNumeric data summary:")
 print(f"  Count: {len(numeric_data)} cells")
 if len(numeric_data) > 0:
     values = pd.to_numeric(numeric_data['content'], errors='coerce')
@@ -144,13 +145,13 @@ try:
     print("✓ Formatting information extracted:")
     for format_type, format_list in formats.items():
         print(f"  {format_type}: {len(format_list)} entries")
-        
+
     # Show some font information if available
     if formats['fonts']:
         print("\nFont examples:")
         for i, font in enumerate(formats['fonts'][:3]):  # Show first 3
             print(f"  Font {i}: {font}")
-            
+
 except Exception as e:
     print(f"⚠ Could not extract detailed formatting: {e}")
 
@@ -160,7 +161,7 @@ print("-" * 43)
 
 # Filter for specific sheet and data type
 employee_text = all_cells[
-    (all_cells['sheet'] == 'Employees') & 
+    (all_cells['sheet'] == 'Employees') &
     (all_cells['data_type'] == 'text')
 ]
 print(f"Text cells in Employees sheet: {len(employee_text)}")
@@ -182,7 +183,7 @@ print("-" * 48)
 
 # Example: Reconstruct the Employees table from tidy data
 emp_cells = all_cells[
-    (all_cells['sheet'] == 'Employees') & 
+    (all_cells['sheet'] == 'Employees') &
     (all_cells['data_type'] != 'blank')
 ]
 
@@ -193,9 +194,9 @@ print(emp_cells[['address', 'row', 'col', 'content']].head(8).to_string(index=Fa
 # Create a pivot to reconstruct tabular format
 if len(emp_cells) > 0:
     pivot_table = emp_cells.pivot_table(
-        index='row', 
-        columns='col', 
-        values='content', 
+        index='row',
+        columns='col',
+        values='content',
         aggfunc='first'
     ).fillna('')
     print(f"\nReconstructed as table ({pivot_table.shape[0]} rows x {pivot_table.shape[1]} cols):")

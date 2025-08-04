@@ -4,9 +4,11 @@ Demonstration of the new tidyxl functions: xlsx_sheet_names, xlsx_names, xlsx_va
 """
 
 import pandas as pd
-from tidyxl import xlsx_sheet_names, xlsx_names, xlsx_validation, xlsx_cells
 from openpyxl import Workbook
+from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
+
+from tidyxl import xlsx_cells, xlsx_names, xlsx_sheet_names, xlsx_validation
 
 print("=" * 80)
 print("NEW TIDYXL FUNCTIONS DEMONSTRATION")
@@ -35,9 +37,9 @@ for row_idx, row_data in enumerate(data, 1):
         ws1.cell(row=row_idx, column=col_idx, value=value)
 
 # Add named ranges
-from openpyxl.workbook.defined_name import DefinedName
+
 wb.defined_names["SalesData"] = DefinedName("SalesData", attr_text="Sales_Data.A1:D5")
-wb.defined_names["ProductList"] = DefinedName("ProductList", attr_text="Sales_Data.A2:A5") 
+wb.defined_names["ProductList"] = DefinedName("ProductList", attr_text="Sales_Data.A2:A5")
 wb.defined_names["SalesColumn"] = DefinedName("SalesColumn", attr_text="Sales_Data.C2:C5")
 
 # Sheet 2: Validation examples
@@ -59,7 +61,7 @@ for row_idx, row_data in enumerate(validation_data, 1):
 # 1. Number validation (whole numbers between 1-100)
 number_validation = DataValidation(
     type="whole",
-    operator="between", 
+    operator="between",
     formula1=1,
     formula2=100,
     showErrorMessage=True,
@@ -75,7 +77,7 @@ date_validation = DataValidation(
     operator="greaterThan",
     formula1="2020-01-01",
     showErrorMessage=True,
-    errorTitle="Invalid Date", 
+    errorTitle="Invalid Date",
     error="Date must be after 2020-01-01"
 )
 ws2.add_data_validation(date_validation)
@@ -142,12 +144,12 @@ if len(names_df) > 0:
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', None)
     print(names_df.to_string(index=False))
-    
-    print(f"\nBreakdown:")
+
+    print("\nBreakdown:")
     print(f"  Global ranges: {len(names_df[names_df['sheet'].isna()])}")
     print(f"  Sheet-specific ranges: {len(names_df[names_df['sheet'].notna()])}")
-    print(f"  Cell ranges: {len(names_df[names_df['is_range'] == True])}")
-    print(f"  Complex formulas: {len(names_df[names_df['is_range'] == False])}")
+    print(f"  Cell ranges: {len(names_df[names_df['is_range']])}")
+    print(f"  Complex formulas: {len(names_df[not names_df['is_range']])}")
 else:
     print("No named ranges found in this file")
 
@@ -160,19 +162,19 @@ print(f"Validation rules found: {len(validation_df)}")
 
 if len(validation_df) > 0:
     print("\nValidation rules details:")
-    
+
     # Show key columns for readability
     key_columns = ['sheet', 'ref', 'type', 'operator', 'formula1', 'formula2', 'error_title']
     available_columns = [col for col in key_columns if col in validation_df.columns]
-    
+
     print(validation_df[available_columns].to_string(index=False))
-    
-    print(f"\nValidation types found:")
+
+    print("\nValidation types found:")
     type_counts = validation_df['type'].value_counts()
     for vtype, count in type_counts.items():
         print(f"  {vtype}: {count} rules")
-        
-    print(f"\nValidation by sheet:")
+
+    print("\nValidation by sheet:")
     sheet_counts = validation_df['sheet'].value_counts()
     for sheet, count in sheet_counts.items():
         print(f"  {sheet}: {count} rules")
@@ -226,12 +228,12 @@ print("""
 xlsx_sheet_names(path, check_filetype=True) -> List[str]
     Returns list of worksheet names in order
 
-xlsx_names(path, check_filetype=True) -> pd.DataFrame  
+xlsx_names(path, check_filetype=True) -> pd.DataFrame
     Returns named ranges with columns: sheet, name, formula, comment, hidden, is_range
 
 xlsx_validation(path, sheets=None, check_filetype=True) -> pd.DataFrame
-    Returns validation rules with columns: sheet, ref, type, operator, formula1, 
-    formula2, allow_blank, show_input_message, show_error_message, prompt_title, 
+    Returns validation rules with columns: sheet, ref, type, operator, formula1,
+    formula2, allow_blank, show_input_message, show_error_message, prompt_title,
     prompt, error_title, error, error_style
 
 xlsx_cells(path, sheets=None, check_filetype=True, include_blank_cells=True) -> pd.DataFrame

@@ -3,9 +3,11 @@
 Demonstration of the updated tidyxl column structure matching R package
 """
 
-import pandas as pd
-from tidyxl import xlsx_cells
 from datetime import datetime
+
+import pandas as pd
+
+from tidyxl import xlsx_cells
 
 print("=" * 80)
 print("TIDYXL COLUMN STRUCTURE - Now Matching R Package Exactly")
@@ -23,7 +25,7 @@ test_data = {
 with pd.ExcelWriter('column_test.xlsx', engine='openpyxl') as writer:
     df = pd.DataFrame(test_data)
     df.to_excel(writer, sheet_name='Data', index=False)
-    
+
     # Add a sheet with formulas
     formula_data = {
         'Description': ['Sum', 'Average', 'Count'],
@@ -48,7 +50,7 @@ for i, col in enumerate(cells.columns, 1):
     # Get sample non-null value for type demonstration
     sample_vals = cells[col].dropna()
     sample_type = type(sample_vals.iloc[0]).__name__ if len(sample_vals) > 0 else 'None'
-    
+
     print(f"{i:2d}. {col:<20} ({sample_type})")
 
 print("\n" + "=" * 80)
@@ -75,7 +77,7 @@ for dtype in data_types:
         print(f"  Address: {row['address']}")
         print(f"  Content: {row['content']}")
         print(f"  is_blank: {row['is_blank']}")
-        
+
         # Show the typed value columns
         if row['logical'] is not None:
             print(f"  logical: {row['logical']}")
@@ -96,14 +98,14 @@ print("=" * 80)
 
 column_mapping = {
     1: "sheet - Worksheet name",
-    2: "address - Cell address in A1 notation", 
+    2: "address - Cell address in A1 notation",
     3: "row - Row number",
     4: "col - Column number",
     5: "is_blank - Whether cell has a value",
     6: "content - Raw cell value before type conversion",
     7: "data_type - Cell type (error, logical, numeric, date, character, blank)",
     8: "error - Cell error value",
-    9: "logical - Boolean value", 
+    9: "logical - Boolean value",
     10: "numeric - Numeric value",
     11: "date - Date value",
     12: "character - String value",
@@ -113,7 +115,7 @@ column_mapping = {
     16: "formula_group - Formula group index",
     17: "comment - Cell comment text",
     18: "height - Row height in Excel units",
-    19: "width - Column width in Excel units", 
+    19: "width - Column width in Excel units",
     20: "row_outline_level - Row outline level",
     21: "col_outline_level - Column outline level",
     22: "style_format - Index for style formats",
@@ -128,7 +130,7 @@ print("KEY DIFFERENCES FROM PREVIOUS VERSION:")
 print("=" * 80)
 print("✓ Added separate columns for each value type (logical, numeric, date, character, error)")
 print("✓ Added is_blank column instead of 'blank' data_type")
-print("✓ Added formula metadata (is_array, formula_ref, formula_group)")  
+print("✓ Added formula metadata (is_array, formula_ref, formula_group)")
 print("✓ Added outline level columns")
 print("✓ Added check_filetype parameter")
 print("✓ Content is now raw string representation")
