@@ -2,12 +2,12 @@
 Formatting information extraction functionality
 """
 
-from typing import Any
+from typing import Any, Dict
 
 from openpyxl import load_workbook
 
 
-def xlsx_formats(path: str) -> dict[str, Any]:
+def xlsx_formats(path: str) -> Dict[str, Any]:
     """
     Import xlsx (Excel) formatting information.
 

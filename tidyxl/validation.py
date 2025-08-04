@@ -2,6 +2,7 @@
 Data validation extraction functionality
 """
 
+from typing import List, Optional, Union
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -9,7 +10,7 @@ from openpyxl import load_workbook
 
 def xlsx_validation(
     path: str,
-    sheets: str | list[str] | None = None,
+    sheets: Optional[Union[str, List[str]]] = None,
     check_filetype: bool = True
 ) -> pd.DataFrame:
     """

@@ -2,7 +2,7 @@
 Cell data extraction functionality
 """
 
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter
 
 def xlsx_cells(
     path: str,
-    sheets: str | list[str] | None = None,
+    sheets: Optional[Union[str, List[str]]] = None,
     check_filetype: bool = True,
     include_blank_cells: bool = True
 ) -> pd.DataFrame:
@@ -167,7 +167,7 @@ def xlsx_cells(
     return df
 
 
-def _get_cell_data_and_values(cell) -> tuple[str, dict[str, Any]]:
+def _get_cell_data_and_values(cell) -> Tuple[str, Dict[str, Any]]:
     """
     Determine the data type of a cell and extract typed values.
 
@@ -184,7 +184,7 @@ def _get_cell_data_and_values(cell) -> tuple[str, dict[str, Any]]:
         and typed_values_dict contains the appropriate typed value
     """
 
-    typed_values: dict[str, Any] = {
+    typed_values: Dict[str, Any] = {
         'error': None,
         'logical': None,
         'numeric': None,
@@ -256,7 +256,7 @@ def _is_date_format(cell) -> bool:
     return any(indicator in format_str for indicator in date_indicators)
 
 
-def _get_formula_info(cell) -> dict[str, Any]:
+def _get_formula_info(cell) -> Dict[str, Any]:
     """
     Extract formula-related information from a cell.
 
@@ -271,7 +271,7 @@ def _get_formula_info(cell) -> dict[str, Any]:
         Dictionary with formula, is_array, formula_ref, formula_group
     """
 
-    formula_info: dict[str, Any] = {
+    formula_info: Dict[str, Any] = {
         'formula': None,
         'is_array': False,
         'formula_ref': None,

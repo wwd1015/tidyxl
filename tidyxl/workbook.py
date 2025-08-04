@@ -3,12 +3,13 @@ Workbook-level functionality for sheet names and metadata
 """
 
 import re
+from typing import List
 
 import pandas as pd
 from openpyxl import load_workbook
 
 
-def xlsx_sheet_names(path: str, check_filetype: bool = True) -> list[str]:
+def xlsx_sheet_names(path: str, check_filetype: bool = True) -> List[str]:
     """
     List sheets in an xlsx (Excel) file.
 
