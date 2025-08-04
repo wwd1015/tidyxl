@@ -1,0 +1,51 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="200" height="80" fill="#f8f9fa" rx="8"/>
+  
+  <!-- Excel spreadsheet grid representation -->
+  <g transform="translate(20, 15)">
+    <!-- Grid lines -->
+    <g stroke="#e9ecef" stroke-width="1" fill="none">
+      <!-- Horizontal lines -->
+      <line x1="0" y1="0" x2="60" y2="0"/>
+      <line x1="0" y1="12" x2="60" y2="12"/>
+      <line x1="0" y1="24" x2="60" y2="24"/>
+      <line x1="0" y1="36" x2="60" y2="36"/>
+      <line x1="0" y1="48" x2="60" y2="48"/>
+      <!-- Vertical lines -->
+      <line x1="0" y1="0" x2="0" y2="48"/>
+      <line x1="15" y1="0" x2="15" y2="48"/>
+      <line x1="30" y1="0" x2="30" y2="48"/>
+      <line x1="45" y1="0" x2="45" y2="48"/>
+      <line x1="60" y1="0" x2="60" y2="48"/>
+    </g>
+    
+    <!-- Sample data cells -->
+    <rect x="1" y="1" width="13" height="10" fill="#e3f2fd"/>
+    <rect x="16" y="1" width="13" height="10" fill="#f3e5f5"/>
+    <rect x="31" y="1" width="13" height="10" fill="#e8f5e8"/>
+    <rect x="1" y="13" width="13" height="10" fill="#fff3e0"/>
+    <rect x="16" y="13" width="13" height="10" fill="#fce4ec"/>
+    <rect x="31" y="13" width="13" height="10" fill="#e1f5fe"/>
+  </g>
+  
+  <!-- Arrow indicating transformation -->
+  <g transform="translate(95, 30)">
+    <path d="M0 10 L15 10 L10 5 M15 10 L10 15" stroke="#6c757d" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Tidy data representation (vertical bars) -->
+  <g transform="translate(125, 15)">
+    <rect x="0" y="5" width="8" height="35" fill="#007bff" rx="2"/>
+    <rect x="12" y="10" width="8" height="30" fill="#28a745" rx="2"/>
+    <rect x="24" y="8" width="8" height="32" fill="#ffc107" rx="2"/>
+    <rect x="36" y="12" width="8" height="28" fill="#dc3545" rx="2"/>
+    <rect x="48" y="6" width="8" height="34" fill="#6f42c1" rx="2"/>
+  </g>
+  
+  <!-- Logo text -->
+  <text x="20" y="70" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#495057">tidyxl</text>
+  
+  <!-- Subtitle -->
+  <text x="75" y="70" font-family="Arial, sans-serif" font-size="10" fill="#6c757d">Excel → Tidy Data</text>
+</svg>

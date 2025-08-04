@@ -1,4 +1,10 @@
-# tidyxl
+<p align="center">
+  <img src="assets/logo.svg" alt="tidyxl Logo" width="400"/>
+</p>
+
+[![PyPI version](https://badge.fury.io/py/tidyxl.svg)](https://badge.fury.io/py/tidyxl)
+[![PyPI downloads](https://img.shields.io/pypi/dm/tidyxl.svg)](https://pypi.org/project/tidyxl/)
+[![Python versions](https://img.shields.io/pypi/pyversions/tidyxl.svg)](https://pypi.org/project/tidyxl/)
 
 A Python package that imports Excel files (.xlsx, .xlsm) into a tidy format where each cell is represented as a single row with detailed metadata. This package is inspired by and closely mirrors the functionality of the R tidyxl package.
 
