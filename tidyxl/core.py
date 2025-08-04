@@ -3,7 +3,7 @@ Core functionality for tidyxl package
 """
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -183,7 +183,7 @@ def xlsx_formats(path: str) -> Dict[str, Any]:
 
     wb = load_workbook(filename=path, data_only=False)
 
-    formats = {
+    formats: Dict[str, List[Any]] = {
         'fonts': [],
         'fills': [],
         'borders': [],
@@ -235,7 +235,7 @@ def xlsx_formats(path: str) -> Dict[str, Any]:
     return formats
 
 
-def _get_cell_data_and_values(cell) -> tuple[str, Dict[str, Any]]:
+def _get_cell_data_and_values(cell) -> Tuple[str, Dict[str, Any]]:
     """
     Determine the data type of a cell and extract typed values.
 
@@ -252,7 +252,7 @@ def _get_cell_data_and_values(cell) -> tuple[str, Dict[str, Any]]:
         and typed_values_dict contains the appropriate typed value
     """
 
-    typed_values = {
+    typed_values: Dict[str, Any] = {
         'error': None,
         'logical': None,
         'numeric': None,
@@ -340,7 +340,7 @@ def _get_formula_info(cell) -> Dict[str, Any]:
         Dictionary with formula, is_array, formula_ref, formula_group
     """
 
-    formula_info = {
+    formula_info: Dict[str, Any] = {
         'formula': None,
         'is_array': False,
         'formula_ref': None,
