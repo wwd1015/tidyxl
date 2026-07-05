@@ -2,11 +2,26 @@
 Cell data extraction functionality
 """
 
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
+from openpyxl.utils.datetime import from_excel
+
+from ._common import resolve_sheet_names, validate_filetype
+
+# Column order of the DataFrame returned by xlsx_cells
+_CELL_COLUMNS = [
+    'sheet', 'address', 'row', 'col', 'is_blank', 'content', 'data_type',
+    'error', 'logical', 'numeric', 'date', 'character', 'formula',
+    'is_array', 'formula_ref', 'formula_group', 'comment', 'height', 'width',
+    'row_outline_level', 'col_outline_level', 'style_format', 'local_format_id'
+]
+
+# Characters whose presence in a number format indicates a date/time format
+_DATE_FORMAT_CHARS = frozenset('dmyhs:/-')
 
 
 def xlsx_cells(
@@ -62,114 +77,100 @@ def xlsx_cells(
         - local_format_id: index for local cell formats (int)
     """
 
-    # Check file type if requested
     if check_filetype:
-        if not path.lower().endswith(('.xlsx', '.xlsm')):
-            raise ValueError("File must be .xlsx or .xlsm format")
+        validate_filetype(path)
 
-    # Load workbook
-    wb = load_workbook(filename=path, data_only=False, keep_vba=True)
+    # keep_vba retains the whole source archive in memory, so only pay that
+    # cost for macro-enabled files
+    wb = load_workbook(
+        filename=path, data_only=False, keep_vba=path.lower().endswith('.xlsm')
+    )
 
-    # Determine which sheets to process
-    if sheets is None:
-        sheet_names = wb.sheetnames
-    elif isinstance(sheets, str):
-        sheet_names = [sheets]
-    else:
-        sheet_names = sheets
+    try:
+        sheet_names = resolve_sheet_names(wb, sheets)
+        all_cells = []
+        # Stable per-workbook index for each distinct number format
+        format_ids: Dict[str, int] = {}
 
-    # Validate sheet names
-    available_sheets = wb.sheetnames
-    for sheet_name in sheet_names:
-        if sheet_name not in available_sheets:
-            raise ValueError(f"Sheet '{sheet_name}' not found. Available sheets: {available_sheets}")
+        # Sheets are processed in alphabetical order and openpyxl yields cells
+        # in row/column order, so the output is already sorted by
+        # (sheet, row, col) without a post-hoc DataFrame sort.
+        for sheet_name in sorted(sheet_names):
+            ws = wb[sheet_name]
+            # Width/outline lookups are cached per column index because
+            # openpyxl's dimension mappings create objects on access.
+            col_dims: Dict[int, Tuple[Optional[float], int]] = {}
 
-    all_cells = []
-
-    for sheet_name in sheet_names:
-        ws = wb[sheet_name]
-
-        # Get all cells in the worksheet
-        for row in ws.iter_rows():
-            for cell in row:
-                # Determine if cell is blank
-                is_blank = cell.value is None and (cell.data_type == 'n' or cell.data_type is None)
-
-                # Skip blank cells if not requested
-                if not include_blank_cells and is_blank:
+            for row in ws.iter_rows():
+                if not row:
                     continue
 
-                # Get raw content as string
-                content = str(cell.value) if cell.value is not None else None
+                row_dim = ws.row_dimensions[row[0].row]
+                row_height = row_dim.height
+                row_outline_level = row_dim.outline_level or 0
 
-                # Determine data type and extract typed values
-                data_type, typed_values = _get_cell_data_and_values(cell)
+                for cell in row:
+                    is_blank = cell.value is None and (
+                        cell.data_type == 'n' or cell.data_type is None
+                    )
 
-                # Get formula information
-                formula_info = _get_formula_info(cell)
+                    if not include_blank_cells and is_blank:
+                        continue
 
-                # Get comment
-                comment = cell.comment.text if cell.comment else None
+                    col_dim = col_dims.get(cell.column)
+                    if col_dim is None:
+                        dim = ws.column_dimensions[get_column_letter(cell.column)]
+                        col_dim = (dim.width, dim.outline_level or 0)
+                        col_dims[cell.column] = col_dim
 
-                # Get dimensions
-                row_height = ws.row_dimensions[cell.row].height
-                col_width = ws.column_dimensions[get_column_letter(cell.column)].width
+                    data_type, value_column, value = _get_typed_value(cell)
+                    formula_info = _get_formula_info(cell)
 
-                # Get outline levels
-                row_outline_level = ws.row_dimensions[cell.row].outline_level or 0
-                col_outline_level = ws.column_dimensions[get_column_letter(cell.column)].outline_level or 0
+                    number_format = cell.number_format
+                    local_format_id = (
+                        format_ids.setdefault(number_format, len(format_ids))
+                        if number_format else None
+                    )
 
-                # Create cell record matching R tidyxl structure
-                cell_record = {
-                    'sheet': sheet_name,
-                    'address': cell.coordinate,
-                    'row': cell.row,
-                    'col': cell.column,
-                    'is_blank': is_blank,
-                    'content': content,
-                    'data_type': data_type,
-                    'error': typed_values.get('error'),
-                    'logical': typed_values.get('logical'),
-                    'numeric': typed_values.get('numeric'),
-                    'date': typed_values.get('date'),
-                    'character': typed_values.get('character'),
-                    'formula': formula_info['formula'],
-                    'is_array': formula_info['is_array'],
-                    'formula_ref': formula_info['formula_ref'],
-                    'formula_group': formula_info['formula_group'],
-                    'comment': comment,
-                    'height': row_height,
-                    'width': col_width,
-                    'row_outline_level': row_outline_level,
-                    'col_outline_level': col_outline_level,
-                    'style_format': cell.style if hasattr(cell, 'style') else None,
-                    'local_format_id': id(cell.number_format) if cell.number_format else None
-                }
+                    cell_record = {
+                        'sheet': sheet_name,
+                        'address': cell.coordinate,
+                        'row': cell.row,
+                        'col': cell.column,
+                        'is_blank': is_blank,
+                        'content': str(cell.value) if cell.value is not None else None,
+                        'data_type': data_type,
+                        'error': None,
+                        'logical': None,
+                        'numeric': None,
+                        'date': None,
+                        'character': None,
+                        'formula': formula_info['formula'],
+                        'is_array': formula_info['is_array'],
+                        'formula_ref': formula_info['formula_ref'],
+                        'formula_group': formula_info['formula_group'],
+                        'comment': cell.comment.text if cell.comment else None,
+                        'height': row_height,
+                        'width': col_dim[0],
+                        'row_outline_level': row_outline_level,
+                        'col_outline_level': col_dim[1],
+                        'style_format': cell.style,
+                        'local_format_id': local_format_id
+                    }
 
-                all_cells.append(cell_record)
+                    if value_column is not None:
+                        cell_record[value_column] = value
 
-    # Convert to DataFrame with proper columns even if empty
-    if not all_cells:
-        # Return empty DataFrame with correct column structure
-        expected_columns = [
-            'sheet', 'address', 'row', 'col', 'is_blank', 'content', 'data_type',
-            'error', 'logical', 'numeric', 'date', 'character', 'formula',
-            'is_array', 'formula_ref', 'formula_group', 'comment', 'height', 'width',
-            'row_outline_level', 'col_outline_level', 'style_format', 'local_format_id'
-        ]
-        return pd.DataFrame(columns=expected_columns)
+                    all_cells.append(cell_record)
+    finally:
+        wb.close()
 
-    df = pd.DataFrame(all_cells)
-
-    # Sort by sheet, row, column for consistent output
-    df = df.sort_values(['sheet', 'row', 'col']).reset_index(drop=True)
-
-    return df
+    return pd.DataFrame(all_cells, columns=_CELL_COLUMNS)
 
 
-def _get_cell_data_and_values(cell) -> Tuple[str, Dict[str, Any]]:
+def _get_typed_value(cell) -> Tuple[str, Optional[str], Any]:
     """
-    Determine the data type of a cell and extract typed values.
+    Determine the data type of a cell and extract its typed value.
 
     Parameters
     ----------
@@ -179,81 +180,58 @@ def _get_cell_data_and_values(cell) -> Tuple[str, Dict[str, Any]]:
     Returns
     -------
     tuple
-        (data_type, typed_values_dict) where data_type is one of:
-        'error', 'logical', 'numeric', 'date', 'character', 'blank'
-        and typed_values_dict contains the appropriate typed value
+        (data_type, value_column, value) where data_type is one of
+        'error', 'logical', 'numeric', 'date', 'character', 'formula',
+        'blank', and value_column names the output column holding the
+        typed value (None when there is no value to store)
     """
-
-    typed_values: Dict[str, Any] = {
-        'error': None,
-        'logical': None,
-        'numeric': None,
-        'date': None,
-        'character': None
-    }
 
     if cell.value is None:
-        return 'blank', typed_values
+        return 'blank', None, None
 
-    # Handle different openpyxl data types
-    if cell.data_type == 'e':  # Error
-        typed_values['error'] = str(cell.value)
-        return 'error', typed_values
+    data_type = cell.data_type
 
-    elif cell.data_type == 'b':  # Boolean
-        typed_values['logical'] = bool(cell.value)
-        return 'logical', typed_values
+    if data_type == 'e':  # Error
+        return 'error', 'error', str(cell.value)
 
-    elif cell.data_type == 'n':  # Numeric
-        # Check if it's a date by looking at number format
-        if _is_date_format(cell):
+    if data_type == 'b':  # Boolean
+        return 'logical', 'logical', bool(cell.value)
+
+    if data_type == 'n':  # Numeric, possibly a date depending on format
+        if _is_date_format(cell.number_format):
             try:
-                # Convert Excel date serial to datetime
-                from openpyxl.utils.datetime import from_excel
-                typed_values['date'] = from_excel(cell.value)
-                return 'date', typed_values
+                return 'date', 'date', from_excel(cell.value)
             except Exception:
-                # Fall back to numeric if date conversion fails
-                typed_values['numeric'] = float(cell.value)
-                return 'numeric', typed_values
-        else:
-            typed_values['numeric'] = float(cell.value)
-            return 'numeric', typed_values
+                pass  # Fall back to numeric if date conversion fails
+        return 'numeric', 'numeric', float(cell.value)
 
-    elif cell.data_type == 'f':  # Formula
-        # For formulas, return 'formula' as data_type and don't populate character column
-        # The formula itself will be handled by _get_formula_info
-        return 'formula', typed_values
+    if data_type == 'f':  # Formula: the text is reported in the formula column
+        return 'formula', None, None
 
-    else:  # String types ('s', 'inlineStr', 'str')
-        typed_values['character'] = str(cell.value)
-        return 'character', typed_values
+    # String types ('s', 'inlineStr', 'str')
+    return 'character', 'character', str(cell.value)
 
 
-def _is_date_format(cell) -> bool:
+@lru_cache(maxsize=None)
+def _is_date_format(number_format: Optional[str]) -> bool:
     """
-    Check if a cell's number format indicates it's a date.
+    Check if a number format string indicates a date.
 
     Parameters
     ----------
-    cell : openpyxl.cell.Cell
-        The cell to check
+    number_format : str or None
+        The cell's number format code
 
     Returns
     -------
     bool
-        True if the cell appears to be formatted as a date
+        True if the format appears to be a date format
     """
 
-    if not cell.number_format:
+    if not number_format:
         return False
 
-    # Common date format indicators
-    date_indicators = ['d', 'm', 'y', 'h', 's', ':', '/', '-']
-    format_str = cell.number_format.lower()
-
-    # Check if format contains date indicators
-    return any(indicator in format_str for indicator in date_indicators)
+    return not _DATE_FORMAT_CHARS.isdisjoint(number_format.lower())
 
 
 def _get_formula_info(cell) -> Dict[str, Any]:
@@ -282,7 +260,7 @@ def _get_formula_info(cell) -> Dict[str, Any]:
         formula_info['formula'] = str(cell.value)
 
         # Check for array formula indicators
-        if hasattr(cell, 'array_formula') and cell.array_formula:
+        if getattr(cell, 'array_formula', None):
             formula_info['is_array'] = True
 
         # Try to get formula reference range (this is limited in openpyxl)

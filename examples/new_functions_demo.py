@@ -149,7 +149,7 @@ if len(names_df) > 0:
     print(f"  Global ranges: {len(names_df[names_df['sheet'].isna()])}")
     print(f"  Sheet-specific ranges: {len(names_df[names_df['sheet'].notna()])}")
     print(f"  Cell ranges: {len(names_df[names_df['is_range']])}")
-    print(f"  Complex formulas: {len(names_df[not names_df['is_range']])}")
+    print(f"  Complex formulas: {len(names_df[~names_df['is_range']])}")
 else:
     print("No named ranges found in this file")
 
