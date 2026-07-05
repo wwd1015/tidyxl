@@ -8,6 +8,14 @@ from typing import List
 import pandas as pd
 from openpyxl import load_workbook
 
+from ._common import validate_filetype
+
+# Leading sheet reference (e.g. "Sheet1!") in a defined-name formula
+_SHEET_PREFIX_RE = re.compile(r'^[^!]*!')
+
+# Single cell or rectangular range, with optional absolute ($) markers
+_CELL_RANGE_RE = re.compile(r'^\$?[A-Z]+\$?\d+(?::\$?[A-Z]+\$?\d+)?$')
+
 
 def xlsx_sheet_names(path: str, check_filetype: bool = True) -> List[str]:
     """
@@ -29,10 +37,8 @@ def xlsx_sheet_names(path: str, check_filetype: bool = True) -> List[str]:
         List of worksheet names in their original order
     """
 
-    # Check file type if requested
     if check_filetype:
-        if not path.lower().endswith(('.xlsx', '.xlsm')):
-            raise ValueError("File must be .xlsx or .xlsm format")
+        validate_filetype(path)
 
     # Load workbook (read-only for efficiency)
     wb = load_workbook(filename=path, read_only=True, data_only=False)
@@ -69,55 +75,46 @@ def xlsx_names(path: str, check_filetype: bool = True) -> pd.DataFrame:
         - is_range: Whether formula represents a cell range
     """
 
-    # Check file type if requested
     if check_filetype:
-        if not path.lower().endswith(('.xlsx', '.xlsm')):
-            raise ValueError("File must be .xlsx or .xlsm format")
+        validate_filetype(path)
 
-    # Load workbook
     wb = load_workbook(filename=path, data_only=False)
 
     names_list = []
 
     try:
-        # Get defined names from workbook
+        sheet_names = wb.sheetnames
+
         for name, defined_name in wb.defined_names.items():
             # Determine if it's sheet-specific or global
             sheet_name = None
-            if hasattr(defined_name, 'localSheetId') and defined_name.localSheetId is not None:
-                # Get sheet name by index
-                sheet_names = wb.sheetnames
-                if defined_name.localSheetId < len(sheet_names):
-                    sheet_name = sheet_names[defined_name.localSheetId]
+            local_sheet_id = getattr(defined_name, 'localSheetId', None)
+            if local_sheet_id is not None and local_sheet_id < len(sheet_names):
+                sheet_name = sheet_names[local_sheet_id]
 
-            # Check if it's a range (contains cell references) vs formula
-            formula_text = str(defined_name.attr_text) if hasattr(defined_name, 'attr_text') and defined_name.attr_text else ""
-            is_range = _is_cell_range(formula_text)
+            formula_text = str(getattr(defined_name, 'attr_text', None) or "")
 
-            name_record = {
+            names_list.append({
                 'sheet': sheet_name,
                 'name': name,
                 'formula': formula_text,
                 'comment': getattr(defined_name, 'comment', None),
                 'hidden': getattr(defined_name, 'hidden', False),
-                'is_range': is_range
-            }
-
-            names_list.append(name_record)
+                'is_range': _is_cell_range(formula_text)
+            })
 
     finally:
         wb.close()
 
-    # Convert to DataFrame with proper columns even if empty
-    if not names_list:
-        # Return empty DataFrame with correct column structure
-        return pd.DataFrame(columns=['sheet', 'name', 'formula', 'comment', 'hidden', 'is_range'])
+    df = pd.DataFrame(
+        names_list,
+        columns=['sheet', 'name', 'formula', 'comment', 'hidden', 'is_range']
+    )
 
-    df = pd.DataFrame(names_list)
-
-    # Sort by sheet (global first), then by name
-    df['_sort_key'] = df['sheet'].fillna('')  # Global names first
-    df = df.sort_values(['_sort_key', 'name']).drop('_sort_key', axis=1).reset_index(drop=True)
+    # Sort by sheet (global names first), then by name
+    if not df.empty:
+        df['_sort_key'] = df['sheet'].fillna('')
+        df = df.sort_values(['_sort_key', 'name']).drop('_sort_key', axis=1).reset_index(drop=True)
 
     return df
 
@@ -141,14 +138,6 @@ def _is_cell_range(formula_text: str) -> bool:
         return False
 
     # Remove sheet references for analysis
-    clean_formula = re.sub(r'^[^!]*!', '', formula_text)
+    clean_formula = _SHEET_PREFIX_RE.sub('', formula_text)
 
-    # Simple patterns that indicate cell ranges
-    range_patterns = [
-        r'^[A-Z]+\d+$',  # Single cell (e.g., A1)
-        r'^[A-Z]+\d+:[A-Z]+\d+$',  # Range (e.g., A1:B10)
-        r'^\$?[A-Z]+\$?\d+$',  # Absolute single cell
-        r'^\$?[A-Z]+\$?\d+:\$?[A-Z]+\$?\d+$',  # Absolute range
-    ]
-
-    return any(re.match(pattern, clean_formula.strip()) for pattern in range_patterns)
+    return bool(_CELL_RANGE_RE.match(clean_formula.strip()))

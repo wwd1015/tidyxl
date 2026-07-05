@@ -7,6 +7,15 @@ from typing import List, Optional, Union
 import pandas as pd
 from openpyxl import load_workbook
 
+from ._common import resolve_sheet_names, validate_filetype
+
+# Column order of the DataFrame returned by xlsx_validation
+_VALIDATION_COLUMNS = [
+    'sheet', 'ref', 'type', 'operator', 'formula1', 'formula2',
+    'allow_blank', 'show_input_message', 'show_error_message',
+    'prompt_title', 'prompt', 'error_title', 'error', 'error_style'
+]
+
 
 def xlsx_validation(
     path: str,
@@ -48,72 +57,45 @@ def xlsx_validation(
         - error_style: Error style (stop, warning, information)
     """
 
-    # Check file type if requested
     if check_filetype:
-        if not path.lower().endswith(('.xlsx', '.xlsm')):
-            raise ValueError("File must be .xlsx or .xlsm format")
+        validate_filetype(path)
 
-    # Load workbook
     wb = load_workbook(filename=path, data_only=False)
-
-    # Determine which sheets to process
-    if sheets is None:
-        sheet_names = wb.sheetnames
-    elif isinstance(sheets, str):
-        sheet_names = [sheets]
-    else:
-        sheet_names = sheets
-
-    # Validate sheet names
-    available_sheets = wb.sheetnames
-    for sheet_name in sheet_names:
-        if sheet_name not in available_sheets:
-            raise ValueError(f"Sheet '{sheet_name}' not found. Available sheets: {available_sheets}")
 
     validation_list = []
 
     try:
-        for sheet_name in sheet_names:
+        for sheet_name in resolve_sheet_names(wb, sheets):
             ws = wb[sheet_name]
 
-            # Get data validation rules
-            if hasattr(ws, 'data_validations'):
-                for dv in ws.data_validations.dataValidation:
-                    validation_record = {
-                        'sheet': sheet_name,
-                        'ref': str(dv.sqref) if dv.sqref else None,
-                        'type': dv.type,
-                        'operator': dv.operator,
-                        'formula1': dv.formula1,
-                        'formula2': dv.formula2,
-                        'allow_blank': dv.allowBlank,
-                        'show_input_message': dv.showInputMessage,
-                        'show_error_message': dv.showErrorMessage,
-                        'prompt_title': dv.promptTitle,
-                        'prompt': dv.prompt,
-                        'error_title': dv.errorTitle,
-                        'error': dv.error,
-                        'error_style': dv.errorStyle
-                    }
+            if not hasattr(ws, 'data_validations'):
+                continue
 
-                    validation_list.append(validation_record)
+            for dv in ws.data_validations.dataValidation:
+                validation_list.append({
+                    'sheet': sheet_name,
+                    'ref': str(dv.sqref) if dv.sqref else None,
+                    'type': dv.type,
+                    'operator': dv.operator,
+                    'formula1': dv.formula1,
+                    'formula2': dv.formula2,
+                    'allow_blank': dv.allowBlank,
+                    'show_input_message': dv.showInputMessage,
+                    'show_error_message': dv.showErrorMessage,
+                    'prompt_title': dv.promptTitle,
+                    'prompt': dv.prompt,
+                    'error_title': dv.errorTitle,
+                    'error': dv.error,
+                    'error_style': dv.errorStyle
+                })
 
     finally:
         wb.close()
 
-    # Convert to DataFrame with proper columns even if empty
-    if not validation_list:
-        # Return empty DataFrame with correct column structure
-        expected_columns = [
-            'sheet', 'ref', 'type', 'operator', 'formula1', 'formula2',
-            'allow_blank', 'show_input_message', 'show_error_message',
-            'prompt_title', 'prompt', 'error_title', 'error', 'error_style'
-        ]
-        return pd.DataFrame(columns=expected_columns)
-
-    df = pd.DataFrame(validation_list)
+    df = pd.DataFrame(validation_list, columns=_VALIDATION_COLUMNS)
 
     # Sort by sheet, then by ref
-    df = df.sort_values(['sheet', 'ref']).reset_index(drop=True)
+    if not df.empty:
+        df = df.sort_values(['sheet', 'ref']).reset_index(drop=True)
 
     return df
