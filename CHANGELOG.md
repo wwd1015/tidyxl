@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-07-05
+
+### Changed
+- Refactored internals for structure and efficiency: removed the dead
+  `tidyxl.core` module and extracted shared file-type and sheet-name
+  validation helpers
+- `xlsx_cells()` is ~30% faster on large workbooks: row/column dimension
+  lookups are cached, date-format detection is memoized, and results are
+  emitted pre-sorted instead of sorted after the fact
+- `xlsx_cells()` only preserves VBA archives for `.xlsm` files, reducing
+  memory use for plain `.xlsx` files
+- `local_format_id` is now a stable per-workbook index of the cell's
+  number format instead of a run-dependent identifier
+- `__version__` now reflects the actual package version
+
+### Fixed
+- Workbooks are closed reliably in all readers, including on error paths,
+  eliminating leaked file handles
+- Fixed a crash in `examples/new_functions_demo.py` caused by invalid
+  pandas Series negation
+
 ## [0.1.0] - 2025-07-30
 
 ### Added
@@ -43,5 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PyPI ready package structure
 - MIT License
 
-[Unreleased]: https://github.com/wwd1015/tidyxl/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/wwd1015/tidyxl/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/wwd1015/tidyxl/compare/v0.1.8...v0.1.9
 [0.1.0]: https://github.com/wwd1015/tidyxl/releases/tag/v0.1.0
